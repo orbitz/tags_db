@@ -1,0 +1,3 @@
+#!/bin/sh
+
+sqlite3 papers.db "SELECT path FROM papers"
