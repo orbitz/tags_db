@@ -1,10 +1,12 @@
 #!/bin/sh
 
-PAPER=$1
+for PAPER in "$@"
+do
+    [ -f "$PAPER" ] || exit 1
 
-[ -f "$PAPER" ] || exit 1
+    MD5SUM=`md5 $PAPER | awk '{ print $NF }'`
 
-MD5SUM=`md5 $PAPER | awk '{ print $NF }'`
+    sqlite3 papers.db "INSERT INTO papers (doc_id, path) VALUES(\"$MD5SUM\", \"$PAPER\")"
+done
 
-sqlite3 papers.db "INSERT INTO papers (doc_id, path) VALUES(\"$MD5SUM\", \"$PAPER\")"
 
