@@ -20,10 +20,8 @@ case "$FUNCTION" in
 	;&
     "add" )
 	NAME=$1
-	shift
 	sqlite3 $DB "INSERT INTO root (name) VALUES (\"$NAME\")"
-	$0 tags_add $NAME $@
-	;;
+	;&
     "ta" )
 	;&
     "tags_add" )
