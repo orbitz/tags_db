@@ -88,8 +88,6 @@ case "$FUNCTION" in
 
 	sqlite3 $DB "SELECT tag FROM tags WHERE rid = \"$RID\""
 	;;
-    "d" )
-	;&
     "del" )
 	NAME=$1
 	shift
