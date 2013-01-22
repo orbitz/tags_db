@@ -1,0 +1,112 @@
+#!/bin/sh
+
+set -e
+
+DB=${DB-tags.db}
+
+FUNCTION=$1
+
+shift
+
+case "$FUNCTION" in
+    "init" )
+	sqlite3 $DB "CREATE TABLE root (rid INTEGER PRIMARY KEY, name STRING UNIQUE NOT NULL)"
+	sqlite3 $DB "CREATE TABLE tags (tag STRING, rid STRING, PRIMARY KEY (tag, rid), FOREIGN KEY (rid) REFERENCES root(rid))"
+	;;
+    "all" )
+	sqlite3 $DB "SELECT name FROM root"
+	;;
+    "a" )
+	;&
+    "add" )
+	NAME=$1
+	shift
+	sqlite3 $DB "INSERT INTO root (name) VALUES (\"$NAME\")"
+	$0 tags_add $NAME $@
+	;;
+    "ta" )
+	;&
+    "tags_add" )
+	NAME=$1
+	shift
+	RID=`sqlite3 $DB "SELECT (rid) FROM root WHERE name = \"$NAME\""`
+	if [ "" = "$RID" ]
+	then
+	    echo "Unknown name $NAME"
+	    exit 1
+	fi
+
+	for TAG in "$@"
+	do
+	    sqlite3 $DB "INSERT INTO tags (tag, rid) VALUES (\"$TAG\", \"$RID\")"
+	done
+	;;
+    "tags_all" )
+	sqlite3 $DB "SELECT DISTINCT tag FROM tags"
+	;;
+    "tags_del" )
+	NAME=$1
+	shift
+	RID=`sqlite3 $DB "SELECT (rid) FROM root WHERE name = \"$NAME\""`
+	if [ "" = "$RID" ]
+	then
+	    echo "Unknown name $NAME"
+	    exit 1
+	fi
+
+	for TAG in "$@"
+	do
+	    sqlite3 $DB "DELETE FROM tags WHERE tag = \"$TAG\" and rid = \"$RID\""
+	done
+	;;
+    "ts" )
+	;&
+    "tags_search" )
+	if [ "$#" -gt "0" ]
+	then
+	    TAG=$1
+	    shift
+	    SUBSELECT="SELECT rid FROM tags WHERE tag = \"$TAG\""
+	fi
+
+	for TAG in "$@"
+	do
+	    SUBSELECT=$SUBSELECT" INTERSECT SELECT rid FROM tags WHERE tag = \"$TAG\""
+	done
+
+	SELECT="SELECT name FROM root WHERE rid in ($SUBSELECT)"
+
+	sqlite3 $DB "$SELECT"
+	;;
+    "tags_show" )
+	NAME=$1
+	shift
+	RID=`sqlite3 $DB "SELECT (rid) FROM root WHERE name = \"$NAME\""`
+	if [ "" = "$RID" ]
+	then
+	    echo "Unknown name $NAME"
+	    exit 1
+	fi
+
+	sqlite3 $DB "SELECT tag FROM tags WHERE rid = \"$RID\""
+	;;
+    "d" )
+	;&
+    "del" )
+	NAME=$1
+	shift
+	RID=`sqlite3 $DB "SELECT (rid) FROM root WHERE name = \"$NAME\""`
+	if [ "" = "$RID" ]
+	then
+	    echo "Unknown name $NAME"
+	    exit 1
+	fi
+
+	sqlite3 $DB "DELETE FROM tags WHERE rid = \"$RID\""
+	sqlite3 $DB "DELETe FROM root WHERE rid = \"$RID\""
+	;;
+    * )
+	echo "Unknown function"
+	;;
+esac
+
